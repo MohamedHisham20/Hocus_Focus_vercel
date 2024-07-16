@@ -1,0 +1,69 @@
+{% extends "index0.html" %}
+{% block body %}
+<!-- the connection bet files -->
+  <script type="text/javascript">
+    // update each 4 seconds
+    var intervalID = setInterval(update_values,3000);
+        // fn to find the sound and play it
+        function playSound() {
+            var audio = document.getElementById("myAudio");
+            audio.play();
+        }
+        // call to get the values from the app
+      function update_values() {
+            $.getJSON($SCRIPT_ROOT + '/_stuff',
+                  //  store the data in result
+          function(data) {
+            $('#result').text(data.result);
+            console.log(data);
+              // to play the sound when yawn
+            if (data.result === "Absent") {
+            playSound();}
+          });
+        };
+        //  stop the prediction text from viewing
+        function stopTextColor() {
+          clearInterval(intervalID);
+        }
+        // resets the interval again
+        function startText() {
+          intervalID = setInterval(update_values,3000);
+        }
+        
+    </script>
+    <body onload="update_values();">
+
+    <!-- Audio element -->
+    <audio id="myAudio">
+        <source src="{{ url_for('static', filename='audio/SHINZOU SASAGEYO SOUND EFFECT.mp3') }}" type="audio/mp3">
+        Your browser does not support the audio element.
+    </audio>
+    <!-- navigation bar above -->
+      <nav class="navbar navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="https://github.com/MohamedHisham20/Hocus_Focus" target="_blank">Hocus Focus</a>
+        </div>
+    </nav>
+    <div class="camera">
+        <!-- sets the place where the video will be viewed -->
+        <img id="video" src="{{ url_for('video') }}" width="100%"/>
+    </div>
+    <script>
+      // to get the variable from the app
+      document.getElementById("result").innerHTML;
+      </script>
+    <div class="right-container1">
+<img class="flex-image" src="{{ url_for('static', filename='images/LOgo fateh.png') }}" alt="Logo">
+    </div>
+    <div class="right-container3">  
+      <p id="stat">
+        status
+        <br>
+        <span id="result">?</span>
+      </div>
+      <div class="right-container2">
+        <button class="upload-label" onclick="startText();">Start!</button>
+        <button class="upload-label-s" onclick="stopTextColor();">Stop</button>
+      </div>
+    </body>
+{% endblock %}

@@ -1,0 +1,25 @@
+<!doctype html>
+<head>
+  <!-- some links to ease the back end linking and some script for the shape -->
+  <title>Hocus Focus</title>
+  <link href="https://cdn.bootcss.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.bootcss.com/popper.js/1.12.9/umd/popper.min.js"></script>
+  <script src="https://cdn.bootcss.com/jquery/3.3.1/jquery.min.js"></script>
+  <script src="https://cdn.bootcss.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+  <link href="{{ url_for('static', filename='css/main.css') }}" rel="stylesheet">
+  <link rel="icon" href="https://img.freepik.com/premium-vector/ai-technology-digital-artificial-intelligence-future-circuit-electronic-colorful-vector-logo-design_216988-1080.jpg">
+</head>
+<script type="text/javascript"
+  src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js">
+</script>
+<script type="text/javascript">
+  var $SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
+</script>
+<style>
+  /* the bacck ground image */
+  body{
+    background-image: url("{{ url_for('static', filename='images/6bdf6aedf9da019d2581a5b1423a72a6.png') }}");
+}
+</style>
+<!-- to connect the 2 files -->
+{% block body %}{% endblock %}
