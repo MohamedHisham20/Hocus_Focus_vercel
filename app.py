@@ -71,7 +71,7 @@ def generate_frames():
         if time.time() - timey > 3: # enter each 5 seconds
             timey = time.time() #update the time
             if not success: #couldn't get the camera
-                break
+                continue
             else:
                 #create instance of face detection
                 detector = cv2.CascadeClassifier('Haarcascades/haarcascade_frontalface_default.xml')
