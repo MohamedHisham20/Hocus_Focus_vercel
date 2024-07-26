@@ -4,14 +4,14 @@ import tensorflow as tf
 from PIL import Image
 from flask import Flask, render_template, Response, jsonify, send_from_directory
 import cv2
-from keras.models import load_model
-from mtcnn import MTCNN
+# from tensorflow.keras.models import load_model
+# from mtcnn import MTCNN
 
 #size of the image to be given to the model
 
 SIZE = 224
 # load the model
-VGG16_model = load_model('hocusfocusplease.h5')
+VGG16_model = tf.keras.models.load_model('hocusfocusplease.h5')
 
 # create the app
 app = Flask(__name__)
