@@ -22,19 +22,6 @@ def load_haarcascade(drive_url):
 # Load the Haarcascade file
 cascade_path = load_haarcascade('https://drive.google.com/file/d/1iAxPzT8ssOM9ucUMT78KZBlJbA0MVfZX/view?usp=sharing')
 
-
-def crop_face_and_return(image):
-    cropped_face = None
-    # Create instance of haarcascade
-    detector = cv2.CascadeClassifier(cascade_path)
-    # Capture the face using the model
-    faces = detector.detectMultiScale(image, 1.1, 7)
-    # Crop the face exactly
-    for (x, y, w, h) in faces:
-        cropped_face = image[y:y + h, x:x + w]
-    return cropped_face
-
-
 # Main application
 @app.route('/')
 def index():
