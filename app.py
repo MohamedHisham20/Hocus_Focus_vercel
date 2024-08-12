@@ -4,7 +4,6 @@ import tensorflow as tf
 from PIL import Image
 from flask import Flask, render_template, Response, jsonify, send_from_directory
 import cv2
-# from tensorflow.keras.models import load_model
 # from mtcnn import MTCNN
 
 #size of the image to be given to the model
