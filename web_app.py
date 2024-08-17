@@ -1,5 +1,5 @@
 import time
-from flask import Flask, render_template, Response, jsonify, send_from_directory, request
+from flask import Flask, render_template, Response, jsonify, send_from_directory
 import cv2
 import torch
 from torchvision import transforms
@@ -169,11 +169,14 @@ def predict(passed_model, image_path):  # image path is the path of the image
     plt.title('transformed')
 
     plt.show()
+
     return {'state': predicted_state}
 
 
-# create the app with port 3000
+# create the app
 app = Flask(__name__)
+#to capture the video from the camera
+camera = cv2.VideoCapture(0)
 
 
 def crop_face_and_return(image):
@@ -217,118 +220,78 @@ def crop_face_and_return(image):
 
 
 prediction = []  #prediction array used to calculate the average
+map_prediction = {0: 'Active', 1: 'Sleep', 2: 'Yawn', -1: 'Absent'}
+
+
+#main function of the video and prediction
+def generate_frames():
+    timey = 0  #to use time fn instead of delay
+    last_pred = 0  #used for the sleep (to eliminate wrong frames of sleep)
+    while True:
+        ## read the camera frame
+        success, frame_bgr = camera.read()
+        frame = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
+
+        frame = cv2.flip(frame, 1)
+        if time.time() - timey > 3:  # enter each 5 seconds
+            timey = time.time()  #update the time
+            if not success:  #couldn't get the camera
+                break
+            else:
+                #create instance of face detection
+                detector = cv2.CascadeClassifier('Haarcascades/haarcascade_frontalface_default.xml')
+                #get the face
+
+                faces = detector.detectMultiScale(frame, 1.1, 7)
+
+                # Draw the rectangle around each face
+                for (x, y, w, h) in faces:
+                    cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 2)
+
+                # select the frame from the video (gray scale)
+                cropped_face = crop_face_and_return(frame)      #gray
+                if cropped_face is not None:  # there's a face detected
+                    eye_state = predict(eye_model, cropped_face)
+                    eye_state = eye_state['state']
+                    mouth_state = predict(mouth_model, cropped_face)
+                    mouth_state = mouth_state['state']
+
+                    if eye_state == 0:  # closed eyes
+                        if mouth_state == 0:  # open mouth
+                            pred = 2  # yawn closed eyes
+                        else:  # closed mouth
+                            pred = 1  # sleep
+                    else:         # open eyes
+                        if mouth_state == 0:  # open mouth
+                            pred = 2  # yawn open eyes
+                        else:  # closed mouth
+                            pred = 0  # active
+                else: #no face detected
+                    pred = -1 #absent
+                # Update prediction history only if necessary
+                if pred == 1 or pred == -1 or pred == 2:  # Update only for sleep/absent states
+                    if pred == last_pred:  # Check if the same state is repeated twice
+                        prediction.append(pred)
+                else:
+                    prediction.append(pred)
+
+                last_pred = pred  # Update last_pred
+                print(f'last_pred: ', {last_pred})
+                print(f'pred:', pred)
+                print(f'prediction:', prediction)
+
+            # display the video
+        ret, buffer = cv2.imencode('.jpg', frame_bgr)
+        frame = buffer.tobytes()
+
+        yield (b'--frame\r\n'
+               b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
 
 #main application
 @app.route('/')
 def index():
-    return "Hello, World!"
-
-map_prediction = {0: 'Active', 1: 'Sleep', 2: 'Yawn', -1: 'Absent'}
-
-#main function of the video and prediction
-@app.route('/video', methods=['POST'])
-def generate_frames():
-    global pred, last_pred, prediction  # Declare variables globally for persistence across requests
-
-    if not hasattr(generate_frames, 'last_pred'):  # Check if first request
-        last_pred = -1  # Initialize last_pred outside the loop for the first request
-
-    if not hasattr(generate_frames, 'pred'):  # Check if first request
-        pred = -1  # Initialize pred outside the loop for the first request
-
-    image_file = request.files.get('image')
-    if not image_file:
-        return jsonify({"error": "No image found"}), 400
-    else:
-        # Read the image file and convert it to a numpy array
-        image_data = np.frombuffer(image_file.read(), np.uint8)
-        # Decode the numpy array to an image
-        image = cv2.imdecode(image_data, cv2.IMREAD_COLOR)
-        if image is None:
-            return jsonify({"error": "Failed to decode image"}), 400
-
-        frame = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-
-        #create instance of face detection
-        detector = cv2.CascadeClassifier('Haarcascades/haarcascade_frontalface_default.xml')
-        #get the face
-
-        faces = detector.detectMultiScale(frame, 1.1, 7)
-        #convert to gray scale to enhance the detection of face and eye
-        # gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        # frameBGR = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-
-        # Draw the rectangle around each face
-        for (x, y, w, h) in faces:
-            cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 2)
-        #range of interest (to faster the calculations)
-        # roi_gray = gray[y:y + h, x:x + w]
-        #roi_color = frame[y:y + h, x:x + w]
-        # #detect the eyes
-        # eyes = eye_cascade.detectMultiScale(roi_gray, 1.1, 10)
-        # #draw rectangle around the eyes
-        # for (ex, ey, ew, eh) in eyes:
-        #     cv2.rectangle(roi_color, (ex, ey), (ex + ew, ey + eh), (0, 255, 0), 2)
-
-        # select the frame from the video (gray scale)
-        cropped_face = crop_face_and_return(frame)  #gray
-        if cropped_face is not None:  # there's a face detected
-            #get it back to color image
-            # cropped_face = cv2.cvtColor(cropped_face, cv2.COLOR_GRAY2BGR)
-            # Convert the NumPy array 'cropped_face' into a PIL Image
-
-            # plt.subplot(1, 2, 1)  # 1 row, 2 columns, 1st subplot
-            # plt.imshow(cropped_face)
-            # plt.title('original')
-            # print("cropped face", cropped_face.shape)
-            # pil_image = Image.fromarray(cropped_face)
-            # pil_image = pil_image.convert("RGB")
-
-            # pil_image_mode = pil_image.mode
-            # print("pil image", pil_image_mode)
-
-            # plt.subplot(1, 2, 2)  # 1 row, 2 columns, 1st subplot
-            # plt.imshow(pil_image)
-            # plt.title('converted')
-            #
-            # plt.show()
-            # json_response = json.dumps(predict(cropped_face))
-            eye_state = predict(eye_model, cropped_face)
-            eye_state = eye_state['state']
-            mouth_state = predict(mouth_model, cropped_face)
-            mouth_state = mouth_state['state']
-
-            if eye_state == 0:  #closed eyes
-                if mouth_state == 0: #open mouth
-                    pred = 2  #yawn closed eyes
-                else:  #closed mouth
-                    pred = 1  #sleep
-            elif eye_state == 1:  #open eyes
-                if mouth_state == 0:  #open mouth
-                    pred = 2  #yawn open eyes
-                else:  #closed mouth
-                    pred = 0  #active
-
-            ##############################################################################################################
-############################################## 0 = active, 1 = sleep, 2 = yawn, -1 = absent ########################################
-##################################################################################################################
-
-        else:  # no face detected
-            pred = -1  #absent
-
-        # Update prediction history only if necessary
-        if pred == 1 or pred == -1 or pred == 2:  # Update only for sleep/absent states
-            if pred == last_pred:  # Check if the same state is repeated twice
-                prediction.append(pred)
-        else:
-            prediction.append(pred)
-
-        last_pred = pred  # Update last_pred
-        print(f'last_pred: ', {last_pred})
-        print(f'pred:', pred)
-        print(f'prediction:', prediction)
-    return jsonify({"state": map_prediction[pred]})
+    return render_template('index.html')
 
 
 #to calculate the average
@@ -362,6 +325,12 @@ def stuff():
     return jsonify(result=message)
 
 
+#app to display the frames
+@app.route('/video')
+def video():
+    return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
+
+
 # Ensure that static files are served
 @app.route('/static/<path:filename>')
 def static_files(filename):
@@ -369,4 +338,4 @@ def static_files(filename):
 
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=8080, debug=True)
+    app.run(debug=True)
