@@ -1,0 +1,86 @@
+/* for logo */
+ .flex-image {
+    width: 300px; /* Make the image fill the width of the container */
+   }
+
+ /* Style the logo */
+ .right-container1 {
+    display: flex; /* Take up available space */
+    justify-content: right;
+    align-items: right;
+}
+
+/* Style the buttons */
+.right-container2 {
+    display: flex; /* Take up available space */
+    height: 33%;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+}
+
+/* Style the prediction section */
+.right-container3 {
+    display: flex; /* Take up available space */
+    height: 33%;
+    display: flex;
+    justify-content: space-around;
+}
+
+/* Style the video element to cover the container */
+#video {
+    width: 100%;
+    border-radius: 20px;
+    border: 5px solid #34495E;
+    width: 50%;
+    margin: 20px;
+    overflow: hidden;
+    float: left;
+}
+
+/* the prediction text */
+#result {
+    font-size: 120px;
+    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+    color: #ffffff;
+}
+
+/* the status text */
+#stat {
+    font-size: 20px;
+    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+    color: #ffffff;
+    align-items: flex-start;
+}
+/* start but */
+.upload-label{
+    display: inline-block;
+    padding: 12px 30px;
+    background: #282ede;
+    color: #fff;
+    font-size: 1em;
+    transition: all .4s;
+    cursor: pointer;
+    border-radius: 10px;
+}
+/* stop but */
+.upload-label-s{
+    display: inline-block;
+    padding: 12px 30px;
+    background: #e23131;
+    color: #000000;
+    font-size: 1em;
+    transition: all .4s;
+    cursor: pointer;
+    border-radius: 10px;
+}
+/* start but */
+.upload-label:hover{
+    background: #ffffff;
+    color: #0040ff;
+}
+/* stop but */
+.upload-label-s:hover{
+    background: #ffffff;
+    color: #ed2a2a;
+}
