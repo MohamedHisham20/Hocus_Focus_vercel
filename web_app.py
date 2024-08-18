@@ -139,7 +139,7 @@ mouth_model = Drowness(num_classes)
 eye_model.load_state_dict(
     torch.load("Model2_stn.pth", map_location=torch.device('cpu')))  # PATH is the path of the model
 mouth_model.load_state_dict(
-    torch.load("Model_mouth_stn.pth", map_location=torch.device('cpu')))  # PATH is the path of the model
+    torch.load("Model_mouth_stn2.pth", map_location=torch.device('cpu')))  # PATH is the path of the model
 
 eye_model.to(device)
 mouth_model.to(device)
