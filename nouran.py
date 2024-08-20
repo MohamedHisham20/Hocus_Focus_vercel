@@ -224,7 +224,7 @@ prediction = []  #prediction array used to calculate the average
 def index():
     return "Hello, World!"
 
-map_prediction = {0: 'Active', 1: 'Sleep', 2: 'Yawn', -1: 'Absent'}
+map_prediction = {0: 'Active', 1: 'disengaged', 2: 'disengaged', -1: 'disengaged'}
 
 #main function of the video and prediction
 @app.route('/video', methods=['POST'])
@@ -305,9 +305,9 @@ def generate_frames():
                 else:  #closed mouth
                     pred = 1  #sleep
             elif eye_state == 1:  #open eyes
-                if mouth_state == 0:  #open mouth
-                    pred = 2  #yawn open eyes
-                else:  #closed mouth
+                # if mouth_state == 0:  #open mouth
+                #     pred = 2  #yawn open eyes
+                # else:  #closed mouth
                     pred = 0  #active
 
             ##############################################################################################################

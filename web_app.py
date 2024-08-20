@@ -257,15 +257,17 @@ def generate_frames():
                     mouth_state = mouth_state['state']
 
                     if eye_state == 0:  # closed eyes
+
                         if mouth_state == 0:  # open mouth
                             pred = 2  # yawn closed eyes
                         else:  # closed mouth
                             pred = 1  # sleep
                     else:         # open eyes
-                        if mouth_state == 0:  # open mouth
-                            pred = 2  # yawn open eyes
-                        else:  # closed mouth
-                            pred = 0  # active
+                        pred = 0
+                        # if mouth_state == 0:  # open mouth
+                        #     pred = 2  # yawn open eyes
+                        # else:  # closed mouth
+                        #     pred = 0  # active
                 else: #no face detected
                     pred = -1 #absent
                 # Update prediction history only if necessary
