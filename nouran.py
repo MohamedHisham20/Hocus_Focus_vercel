@@ -1,14 +1,11 @@
-import time
-from flask import Flask, render_template, Response, jsonify, send_from_directory, request
+from flask import Flask, jsonify, send_from_directory, request
 import cv2
 import torch
-from torchvision import transforms
-from torchvision import models
+from torchvision import transforms, models
 from PIL import Image
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
-import matplotlib.pyplot as plt
 
 num_classes = 2
 
@@ -22,27 +19,9 @@ transform = transforms.Compose([
 
 # load image
 def load_image(image, transform):
-    # plt.subplot(2, 2, 1)  # 1 row, 2 columns, 1st subplot
-    # plt.imshow(image)
-    # plt.title('original')
-
     pil_image = Image.fromarray(image)
-
-    # plt.subplot(2, 2, 2)  # 1 row, 2 columns, 1st subplot
-    # plt.imshow(image)
-    # plt.title('convert_to_pil')
-
     pil_image = pil_image.convert("RGB")
-    # plt.subplot(2, 2, 3)  # 1 row, 2 columns, 1st subplot
-    # plt.imshow(image)
-    # plt.title('to_rgb')
-
     pil_image = transform(pil_image)
-    # plt.subplot(2, 2, 4)  # 1 row, 2 columns, 1st subplot
-    # plt.imshow(image)
-    # plt.title('to_tensor')
-    #
-    # plt.show()
 
     return pil_image.unsqueeze(0)  # this for the batch dimension model expected the batch dimension
 
@@ -61,10 +40,6 @@ class LeNet(nn.Module):
             nn.AvgPool2d(kernel_size=2, stride=2),
             nn.Conv2d(in_channels=16, out_channels=120, kernel_size=5, stride=1, padding=0),
             nn.ReLU(),
-            # nn.AvgPool2d(kernel_size=2, stride=2),
-            # nn.Conv2d(in_channels=16, out_channels=3, kernel_size=5, stride=1, padding=0),
-            #   nn.ReLU(),
-            # nn.AvgPool2d(kernel_size=2, stride=2),
 
         )
 
@@ -155,20 +130,7 @@ def predict(passed_model, image_path):  # image path is the path of the image
     predicted_state = np.argmax(pred_probs, axis=1)
     #convert predicted state from np array to int
     predicted_state = int(predicted_state[0])
-    image = image.squeeze(0).permute(1, 2, 0).cpu().numpy()
-    stn = stn[0].permute(1, 2, 0).cpu().detach().numpy()  # Move to CPU before converting to NumPy array
 
-    stn = np.clip(stn, 0, 1)
-
-    plt.subplot(1, 2, 1)  # 1 row, 2 columns, 1st subplot
-    plt.imshow(image)
-    plt.title('original')
-
-    plt.subplot(1, 2, 2)  # 1 row, 2 columns, 2nd subplot
-    plt.imshow(stn)
-    plt.title('transformed')
-
-    plt.show()
     return {'state': predicted_state}
 
 
@@ -186,35 +148,6 @@ def crop_face_and_return(image):
     for (x, y, w, h) in faces:
         cropped_face = image[y:y + h, x:x + w]
     return cropped_face
-
-
-# def crop_face_and_return(image):
-#    cropped_face = None
-#    detector = MTCNN()
-#    faces = detector.detect_faces(image)
-#    if faces:
-#         x, y, width, height = faces[0]['box']
-#         cropped_face = image[y:y + height, x:x + width]
-#    return cropped_face
-
-
-# Function to check if eyes are closed based on aspect ratio
-#takes array of eyes that are detected
-# def are_eyes_closed(eyes):
-#     awake = 0
-#     for eye in eyes:
-#         #get the exact ratio of the eye
-#         (x, y, w, h) = eye
-#         aspect_ratio = float(w) / h  # the greater the value the more sleepy
-#         # Set a threshold for the aspect ratio to determine closed eyes
-#         closed_threshold = 5.0  # may be modified
-#         if aspect_ratio < closed_threshold:
-#             awake += 1 #an eye is detected as open
-#     if awake > 0:
-#         return False
-#     else:
-#         return True
-
 
 prediction = []  #prediction array used to calculate the average
 
@@ -250,50 +183,10 @@ def generate_frames():
 
         frame = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
-        #create instance of face detection
-        detector = cv2.CascadeClassifier('Haarcascades/haarcascade_frontalface_default.xml')
-        #get the face
-
-        faces = detector.detectMultiScale(frame, 1.1, 7)
-        #convert to gray scale to enhance the detection of face and eye
-        # gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        # frameBGR = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-
-        # Draw the rectangle around each face
-        for (x, y, w, h) in faces:
-            cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 2)
-        #range of interest (to faster the calculations)
-        # roi_gray = gray[y:y + h, x:x + w]
-        #roi_color = frame[y:y + h, x:x + w]
-        # #detect the eyes
-        # eyes = eye_cascade.detectMultiScale(roi_gray, 1.1, 10)
-        # #draw rectangle around the eyes
-        # for (ex, ey, ew, eh) in eyes:
-        #     cv2.rectangle(roi_color, (ex, ey), (ex + ew, ey + eh), (0, 255, 0), 2)
-
         # select the frame from the video (gray scale)
         cropped_face = crop_face_and_return(frame)  #gray
         if cropped_face is not None:  # there's a face detected
-            #get it back to color image
-            # cropped_face = cv2.cvtColor(cropped_face, cv2.COLOR_GRAY2BGR)
-            # Convert the NumPy array 'cropped_face' into a PIL Image
 
-            # plt.subplot(1, 2, 1)  # 1 row, 2 columns, 1st subplot
-            # plt.imshow(cropped_face)
-            # plt.title('original')
-            # print("cropped face", cropped_face.shape)
-            # pil_image = Image.fromarray(cropped_face)
-            # pil_image = pil_image.convert("RGB")
-
-            # pil_image_mode = pil_image.mode
-            # print("pil image", pil_image_mode)
-
-            # plt.subplot(1, 2, 2)  # 1 row, 2 columns, 1st subplot
-            # plt.imshow(pil_image)
-            # plt.title('converted')
-            #
-            # plt.show()
-            # json_response = json.dumps(predict(cropped_face))
             eye_state = predict(eye_model, cropped_face)
             eye_state = eye_state['state']
             mouth_state = predict(mouth_model, cropped_face)
@@ -310,7 +203,7 @@ def generate_frames():
                 # else:  #closed mouth
                     pred = 0  #active
 
-            ##############################################################################################################
+##############################################################################################################
 ############################################## 0 = active, 1 = sleep, 2 = yawn, -1 = absent ########################################
 ##################################################################################################################
 
@@ -325,8 +218,6 @@ def generate_frames():
             prediction.append(pred)
 
         last_pred = pred  # Update last_pred
-        print(f'last_pred: ', {last_pred})
-        print(f'pred:', pred)
         print(f'prediction:', prediction)
     return jsonify({"state": map_prediction[pred]})
 
@@ -334,32 +225,6 @@ def generate_frames():
 #to calculate the average
 summ = 0
 timeyy = 0
-
-
-#to display the output average
-@app.route('/_stuff', methods=['GET'])
-def stuff():
-    global summ
-    global timeyy
-    message = ''
-    if len(prediction):  #avoid first empty prediction
-        while time.time() - timeyy > 1:  #enter each 4 seconds
-            timeyy = time.time()
-            if len(prediction) % 5 == 0:  # each 5 readings of the prediction
-                if summ > 5: summ = 5
-                avg = (summ / 5) * 100
-                message = 'avg=' + str(round(avg, 2)) + '%'
-                summ = 0
-            else:
-                l_pred = prediction[-1]  #get last prediction to display it
-                if l_pred == 0:
-                    message = 'Engaged'
-                    summ += 1
-                elif l_pred == -1:
-                    message = "Absent"
-                else:
-                    message = "Disengaged"
-    return jsonify(result=message)
 
 
 # Ensure that static files are served
