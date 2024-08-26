@@ -6,19 +6,55 @@
     <title>Face Detection</title>
 </head>
 <body>
-    <img id="video" src="{{ url_for('video_feed') }}" width="100%">
 
-    <!-- Place your JavaScript here -->
-    <script type="text/javascript">
-        // Request camera access
-        navigator.mediaDevices.getUserMedia({ video: true })
-            .then(function(stream) {
-                const videoElement = document.getElementById('video');
-                videoElement.srcObject = stream;
-            })
-            .catch(function(err) {
-                console.error("Error accessing camera: ", err);
-            });
-    </script>
+<video id="video" width="100%" autoplay></video>
+<canvas id="canvas" style="display:none;"></canvas>
+
+<script type="text/javascript">
+    navigator.mediaDevices.getUserMedia({ video: true })
+        .then(function(stream) {
+            const videoElement = document.getElementById('video');
+            videoElement.srcObject = stream;
+            videoElement.play();
+        })
+        .catch(function(err) {
+            console.error("Error accessing camera: ", err);
+        });
+
+    function captureFrame() {
+        const videoElement = document.getElementById('video');
+        const canvasElement = document.getElementById('canvas');
+        const context = canvasElement.getContext('2d');
+
+        canvasElement.width = videoElement.videoWidth;
+        canvasElement.height = videoElement.videoHeight;
+
+        context.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
+
+        return canvasElement.toDataURL('image/png');
+    }
+
+    function sendFrameToServer() {
+        const frameData = captureFrame();
+
+        $.ajax({
+            type: 'POST',
+            url: '/process_frame',
+            data: {
+                'frame': frameData
+            },
+            success: function(response) {
+                console.log('Server Response:', response);
+                // Update the UI with the server response
+            },
+            error: function(error) {
+                console.error('Error:', error);
+            }
+        });
+    }
+
+    setInterval(sendFrameToServer, 3000);
+</script>
+
 </body>
 </html>
