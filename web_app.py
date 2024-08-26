@@ -155,20 +155,6 @@ def predict(passed_model, image_path):  # image path is the path of the image
     predicted_state = np.argmax(pred_probs, axis=1)
     #convert predicted state from np array to int
     predicted_state = int(predicted_state[0])
-    image = image.squeeze(0).permute(1, 2, 0).cpu().numpy()
-    stn = stn[0].permute(1, 2, 0).cpu().detach().numpy()  # Move to CPU before converting to NumPy array
-
-    stn = np.clip(stn, 0, 1)
-
-    plt.subplot(1, 2, 1)  # 1 row, 2 columns, 1st subplot
-    plt.imshow(image)
-    plt.title('original')
-
-    plt.subplot(1, 2, 2)  # 1 row, 2 columns, 2nd subplot
-    plt.imshow(stn)
-    plt.title('transformed')
-
-    plt.show()
 
     return {'state': predicted_state}
 
@@ -189,34 +175,6 @@ def crop_face_and_return(image):
     for (x, y, w, h) in faces:
         cropped_face = image[y:y + h, x:x + w]
     return cropped_face
-
-
-# def crop_face_and_return(image):
-#    cropped_face = None
-#    detector = MTCNN()
-#    faces = detector.detect_faces(image)
-#    if faces:
-#         x, y, width, height = faces[0]['box']
-#         cropped_face = image[y:y + height, x:x + width]
-#    return cropped_face
-
-
-# Function to check if eyes are closed based on aspect ratio
-#takes array of eyes that are detected
-# def are_eyes_closed(eyes):
-#     awake = 0
-#     for eye in eyes:
-#         #get the exact ratio of the eye
-#         (x, y, w, h) = eye
-#         aspect_ratio = float(w) / h  # the greater the value the more sleepy
-#         # Set a threshold for the aspect ratio to determine closed eyes
-#         closed_threshold = 5.0  # may be modified
-#         if aspect_ratio < closed_threshold:
-#             awake += 1 #an eye is detected as open
-#     if awake > 0:
-#         return False
-#     else:
-#         return True
 
 
 prediction = []  #prediction array used to calculate the average
@@ -278,8 +236,6 @@ def generate_frames():
                     prediction.append(pred)
 
                 last_pred = pred  # Update last_pred
-                print(f'last_pred: ', {last_pred})
-                print(f'pred:', pred)
                 print(f'prediction:', prediction)
 
             # display the video

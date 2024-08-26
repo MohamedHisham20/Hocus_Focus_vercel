@@ -52,6 +52,18 @@
       // to get the variable from the app
       document.getElementById("result").innerHTML;
       </script>
+    <!-- Place your JavaScript here -->
+        <script type="text/javascript">
+            // Request camera access
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(function(stream) {
+                    const videoElement = document.getElementById('video');
+                    videoElement.srcObject = stream;
+                })
+                .catch(function(err) {
+                    console.error("Error accessing camera: ", err);
+                });
+        </script>
     <div class="right-container1">
 <img class="flex-image" src="{{ url_for('static', filename='images/LOgo fateh.png') }}" alt="Logo">
     </div>
