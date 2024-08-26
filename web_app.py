@@ -1,7 +1,11 @@
+import base64
 import time
-from flask import Flask, render_template, Response, jsonify, send_from_directory
+from io import BytesIO
+
+from flask import Flask, render_template, Response, jsonify, send_from_directory, request
 import cv2
 import torch
+from matplotlib import pyplot as plt
 from torchvision import transforms
 from torchvision import models
 from PIL import Image
@@ -125,12 +129,12 @@ def predict(passed_model, image):  # image is the frame from the camera
 
 # Create Flask app
 app = Flask(__name__)
-camera = cv2.VideoCapture(0)  # Capture from the default camera
 
 
 # Crop the face from the frame
 def crop_face_and_return(image):
     cropped_face = None
+
     detector = cv2.CascadeClassifier('Haarcascades/haarcascade_frontalface_default.xml')
     faces = detector.detectMultiScale(image, 1.1, 7)
     for (x, y, w, h) in faces:
@@ -141,47 +145,6 @@ def crop_face_and_return(image):
 prediction = []
 map_prediction = {0: 'Active', 1: 'Sleep', 2: 'Yawn', -1: 'Absent'}
 
-
-# Generate frames and predict
-def generate_frames():
-    timey = 0
-    last_pred = 0
-    while True:
-        success, frame_bgr = camera.read()
-        frame = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
-        frame = cv2.flip(frame, 1)
-
-        if time.time() - timey > 3:  # Process every 3 seconds
-            timey = time.time()
-            if not success:
-                break
-            else:
-                cropped_face = crop_face_and_return(frame)
-                if cropped_face is not None:
-                    eye_state = predict(eye_model, cropped_face)
-                    mouth_state = predict(mouth_model, cropped_face)
-
-                    if eye_state == 0:  # Closed eyes
-                        pred = 2 if mouth_state == 0 else 1  # Yawn or Sleep
-                    else:  # Open eyes
-                        pred = 0  # Active
-                else:
-                    pred = -1  # No face detected (Absent)
-
-                if pred in [1, -1, 2]:  # Update only for sleep/absent states
-                    if pred == last_pred:  # Check if the same state is repeated twice
-                        prediction.append(pred)
-                else:
-                    prediction.append(pred)
-
-                last_pred = pred
-
-            # Display the video
-        ret, buffer = cv2.imencode('.jpg', frame_bgr)
-        frame = buffer.tobytes()
-
-        yield (b'--frame\r\n'
-               b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
 
 # Main application
@@ -202,7 +165,7 @@ def stuff():
     global timeyy
     message = ''
     if len(prediction):
-        while time.time() - timeyy > 1:  # Enter every 1 second
+        while time.time() - timeyy > 2:  # Enter every 1 second
             timeyy = time.time()
             if len(prediction) % 5 == 0:  # Each 5 readings of the prediction
                 if summ > 5: summ = 5
@@ -223,9 +186,78 @@ def stuff():
 
 # To display the frames
 # Change this route
-@app.route('/process_frame')
+@app.route('/process_frame', methods=['POST'])
 def process_frame():
-    return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
+    global pred, last_pred, prediction  # Declare variables globally for persistence across requests
+
+    if not hasattr(process_frame, 'last_pred'):  # Check if first request
+        last_pred = -1  # Initialize last_pred outside the loop for the first request
+
+    if not hasattr(process_frame, 'pred'):  # Check if first request
+        pred = -1  # Initialize pred outside the loop for the first request
+    if 'frame' not in request.form:
+        return jsonify({"error": "No frame key found in request"}), 400
+
+    frame_data = request.form['frame']
+    frame_data = frame_data.split(',')[1]
+    frame = Image.open(BytesIO(base64.b64decode(frame_data)))
+    print(frame)
+
+    if not frame:
+        return jsonify({"error": "No image found"}), 400
+    else:
+        numpy_image = np.array(frame)
+        # Read the image file and convert it to a numpy array
+        if numpy_image.shape[2] == 4:
+            cv2_image = cv2.cvtColor(numpy_image, cv2.COLOR_RGBA2RGB)
+        else:
+            cv2_image = cv2.cvtColor(numpy_image, cv2.COLOR_RGB2BGR)
+            cv2_image = cv2.cvtColor(cv2_image, cv2.COLOR_BGR2RGB)
+
+        # if image is None:
+        #     return jsonify({"error": "Failed to decode image"}), 400
+
+
+        # select the frame from the video (gray scale)
+        cropped_face = crop_face_and_return(cv2_image)  # gray
+
+        if cropped_face is not None:  # there's a face detected
+
+            eye_state = predict(eye_model, cropped_face)
+            # eye_state = eye_state['state']
+            mouth_state = predict(mouth_model, cropped_face)
+            # mouth_state = mouth_state['state']
+
+            if eye_state == 0:  # closed eyes
+                if mouth_state == 0:  # open mouth
+                    pred = 2  # yawn closed eyes
+                else:  # closed mouth
+                    pred = 1  # sleep
+            elif eye_state == 1:  # open eyes
+                # if mouth_state == 0:  #open mouth
+                #     pred = 2  #yawn open eyes
+                # else:  #closed mouth
+                pred = 0  # active
+
+        ##############################################################################################################
+        ############################################## 0 = active, 1 = sleep, 2 = yawn, -1 = absent ########################################
+        ##################################################################################################################
+
+        else:  # no face detected
+            pred = -1  # absent
+
+        # Update prediction history only if necessary
+        if pred == 1 or pred == -1 or pred == 2:  # Update only for sleep/absent states
+            if pred == last_pred:  # Check if the same state is repeated twice
+                prediction.append(pred)
+        else:
+            prediction.append(pred)
+
+        last_pred = pred  # Update last_pred
+        print(f'prediction:', prediction)
+        print(f'pred', pred)
+        print(f'last_pred', last_pred)
+    return jsonify({"state": map_prediction[pred]})
 
 
 # Ensure that static files are served
