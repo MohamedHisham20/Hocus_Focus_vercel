@@ -149,7 +149,7 @@ def crop_face_and_return(image):
         cropped_face = image[y:y + h, x:x + w]
     return cropped_face
 
-prediction = []  #prediction array used to calculate the average
+send_pred = -1  #prediction array used to calculate the average
 last_pred = -1
 pred = -1
 
@@ -158,12 +158,12 @@ pred = -1
 def index():
     return "Hello, World!"
 
-map_prediction = {0: 'Active', 1: 'disengaged', 2: 'disengaged', -1: 'disengaged'}
+map_prediction = {0: 'Active', 1: 'disengaged', 2: 'disengaged', -1: 'absent'}
 
 #main function of the video and prediction
 @app.route('/video', methods=['POST'])
 def generate_frames():
-    global pred, last_pred, prediction  # Declare variables globally for persistence across requests
+    global pred, last_pred, send_pred  # Declare variables globally for persistence across requests
 
     image_file = request.files.get('image')
     if not image_file:
@@ -208,13 +208,12 @@ def generate_frames():
         # Update prediction history only if necessary
         if pred == 1 or pred == -1 or pred == 2:  # Update only for sleep/absent states
             if pred == last_pred:  # Check if the same state is repeated twice
-                prediction.append(pred)
+                send_pred = pred
         else:
-            prediction.append(pred)
+            send_pred = pred
 
-        last_pred = pred  # Update last_pred
-        print(f'prediction:', prediction)
-    return jsonify({"state": map_prediction[pred]})
+        last_pred = pred  # Update last_pred for next iteration
+    return jsonify({"state": map_prediction[send_pred]})
 
 
 #to calculate the average
