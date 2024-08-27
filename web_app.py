@@ -1,11 +1,9 @@
 import base64
 import time
 from io import BytesIO
-
 from flask import Flask, render_template, jsonify, send_from_directory, request
 import cv2
 import torch
-from matplotlib import pyplot as plt
 from torchvision import transforms
 from torchvision import models
 from PIL import Image
