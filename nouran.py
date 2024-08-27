@@ -150,7 +150,8 @@ def crop_face_and_return(image):
     return cropped_face
 
 prediction = []  #prediction array used to calculate the average
-
+last_pred = -1
+pred = -1
 
 #main application
 @app.route('/')
@@ -163,12 +164,6 @@ map_prediction = {0: 'Active', 1: 'disengaged', 2: 'disengaged', -1: 'disengaged
 @app.route('/video', methods=['POST'])
 def generate_frames():
     global pred, last_pred, prediction  # Declare variables globally for persistence across requests
-
-    if not hasattr(generate_frames, 'last_pred'):  # Check if first request
-        last_pred = -1  # Initialize last_pred outside the loop for the first request
-
-    if not hasattr(generate_frames, 'pred'):  # Check if first request
-        pred = -1  # Initialize pred outside the loop for the first request
 
     image_file = request.files.get('image')
     if not image_file:

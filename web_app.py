@@ -2,7 +2,7 @@ import base64
 import time
 from io import BytesIO
 
-from flask import Flask, render_template, Response, jsonify, send_from_directory, request
+from flask import Flask, render_template, jsonify, send_from_directory, request
 import cv2
 import torch
 from matplotlib import pyplot as plt
@@ -124,6 +124,7 @@ def predict(passed_model, image):  # image is the frame from the camera
     pred_probs = torch.nn.functional.softmax(pred_state, dim=1).cpu().detach().numpy()
     predicted_state = np.argmax(pred_probs, axis=1)
     predicted_state = int(predicted_state[0])
+
     return predicted_state
 
 
@@ -144,7 +145,8 @@ def crop_face_and_return(image):
 
 prediction = []
 map_prediction = {0: 'Active', 1: 'Sleep', 2: 'Yawn', -1: 'Absent'}
-
+last_pred = -1
+pred = -1
 
 
 # Main application
@@ -190,18 +192,12 @@ def stuff():
 def process_frame():
     global pred, last_pred, prediction  # Declare variables globally for persistence across requests
 
-    if not hasattr(process_frame, 'last_pred'):  # Check if first request
-        last_pred = -1  # Initialize last_pred outside the loop for the first request
-
-    if not hasattr(process_frame, 'pred'):  # Check if first request
-        pred = -1  # Initialize pred outside the loop for the first request
     if 'frame' not in request.form:
         return jsonify({"error": "No frame key found in request"}), 400
 
     frame_data = request.form['frame']
     frame_data = frame_data.split(',')[1]
     frame = Image.open(BytesIO(base64.b64decode(frame_data)))
-    print(frame)
 
     if not frame:
         return jsonify({"error": "No image found"}), 400
@@ -222,11 +218,12 @@ def process_frame():
         cropped_face = crop_face_and_return(cv2_image)  # gray
 
         if cropped_face is not None:  # there's a face detected
-
             eye_state = predict(eye_model, cropped_face)
             # eye_state = eye_state['state']
             mouth_state = predict(mouth_model, cropped_face)
             # mouth_state = mouth_state['state']
+            print(f'eye_state:', eye_state)
+            print(f'mouth_state:', mouth_state)
 
             if eye_state == 0:  # closed eyes
                 if mouth_state == 0:  # open mouth
@@ -253,10 +250,10 @@ def process_frame():
         else:
             prediction.append(pred)
 
-        last_pred = pred  # Update last_pred
         print(f'prediction:', prediction)
         print(f'pred', pred)
         print(f'last_pred', last_pred)
+        last_pred = pred  # Update last_pred
     return jsonify({"state": map_prediction[pred]})
 
 
