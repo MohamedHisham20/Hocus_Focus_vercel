@@ -213,6 +213,7 @@ def generate_frames():
             send_pred = pred
 
         last_pred = pred  # Update last_pred for next iteration
+    print(f'send_pred:', send_pred)
     return jsonify({"state": map_prediction[send_pred]})
 
 
