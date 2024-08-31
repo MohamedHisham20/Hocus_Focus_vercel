@@ -1,6 +1,7 @@
 from flask import Flask, jsonify, send_from_directory, request
 import cv2
 import torch
+from flask_cors import CORS
 from torchvision import transforms, models
 from PIL import Image
 import torch.nn as nn
@@ -136,6 +137,9 @@ def predict(passed_model, image_path):  # image path is the path of the image
 
 # create the app with port 3000
 app = Flask(__name__)
+
+#create CORS
+CORS(app)
 
 
 def crop_face_and_return(image):
