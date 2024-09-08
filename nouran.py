@@ -140,6 +140,9 @@ app = Flask(__name__)
 
 #create CORS
 CORS(app)
+#use cors to handle requests from mobile app
+
+
 
 
 def crop_face_and_return(image):
