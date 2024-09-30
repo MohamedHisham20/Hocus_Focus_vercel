@@ -232,10 +232,10 @@ def process_frame():
                 else:  # closed mouth
                     pred = 1  # sleep
             elif eye_state == 1:  # open eyes
-                if mouth_state == 0:  #open mouth
-                    pred = 2  #yawn open eyes
-                else:  #closed mouth
-                    pred = 0  # active
+                # if mouth_state == 0:  #open mouth
+                #     pred = 2  #yawn open eyes
+                # else:  #closed mouth
+                pred = 0  # active
 
         ##############################################################################################################
         ############################################## 0 = active, 1 = sleep, 2 = yawn, -1 = absent ########################################
