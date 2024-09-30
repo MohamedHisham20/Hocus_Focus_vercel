@@ -163,6 +163,7 @@ timeyy = 0
 def stuff():
     global summ
     global timeyy
+    global prediction
     message = ''
     if len(prediction):
         while time.time() - timeyy > 2:  # Enter every 1 second
@@ -179,8 +180,10 @@ def stuff():
                     summ += 1
                 elif l_pred == -1:
                     message = "Absent"
-                else:
-                    message = "Disengaged"
+                elif l_pred == 1:
+                    message = "Sleep"
+                elif l_pred == 2:
+                    message = "Yawn"
     return jsonify(result=message)
 
 
@@ -229,10 +232,10 @@ def process_frame():
                 else:  # closed mouth
                     pred = 1  # sleep
             elif eye_state == 1:  # open eyes
-                # if mouth_state == 0:  #open mouth
-                #     pred = 2  #yawn open eyes
-                # else:  #closed mouth
-                pred = 0  # active
+                if mouth_state == 0:  #open mouth
+                    pred = 2  #yawn open eyes
+                else:  #closed mouth
+                    pred = 0  # active
 
         ##############################################################################################################
         ############################################## 0 = active, 1 = sleep, 2 = yawn, -1 = absent ########################################
